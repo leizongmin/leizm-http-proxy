@@ -1,8 +1,8 @@
 import HTTPProxy from './';
 
-const p = new HTTPProxy();
+const proxy = new HTTPProxy();
 
-p.addRule({
+proxy.addRule({
   match: 'http://morning.work/*',
   proxy: 'http://ucdok.com/{1}',
   headers: {
@@ -10,4 +10,4 @@ p.addRule({
   },
 });
 
-p.server.listen(4567, () => console.log('listening...'));
+proxy.server.listen(4567, () => console.log('listening...'));

@@ -5,7 +5,7 @@
  */
 
 import { Socket } from 'net';
-import { createServer, Server, ServerRequest, ServerResponse, request as httpRequest } from 'http';
+import { createServer, Server, ServerRequest, ServerResponse, request as httpRequest, Agent } from 'http';
 import { request as httpsRequest } from 'https';
 import { EventEmitter } from 'events';
 import { parse as parseUrl } from 'url';
@@ -36,6 +36,11 @@ export type ProxyHandler = (req: ServerRequest, result?: string[]) => ProxyResul
  * Debug函数
  */
 export type DebugHandler = (...args: any[]) => void;
+
+/**
+ * 获取Agent的函数
+ */
+export type GetAgentHandler = () => Agent | false | undefined;
 
 /**
  * 已格式化处理的代理规则
@@ -96,6 +101,8 @@ export default class HTTPProxy extends EventEmitter {
   private readonly _rules: Map<RegExp, FormattedRule> = new Map();
   /** 调试函数 */
   private _debug: DebugHandler = createDebug(`http-proxy:#${ HTTPProxy._counter++ }`);
+  /** 生成Agent的函数 */
+  private _getAgent: GetAgentHandler = () => false;
 
   constructor() {
     super();
@@ -210,6 +217,7 @@ export default class HTTPProxy extends EventEmitter {
       method: req.method,
       path: info.path,
       headers: { ...req.headers, ...headers },
+      agent: this._getAgent(),
     }, (remoteRes) => {
       res.writeHead(remoteRes.statusCode || 200, remoteRes.headers);
       remoteRes.pipe(res);
@@ -304,8 +312,15 @@ export default class HTTPProxy extends EventEmitter {
   /**
    * 设置debug函数
    */
-  public set debug(fn: DebugHandler)  {
+  public set debugHandler(fn: DebugHandler)  {
     this._debug = fn;
+  }
+
+  /**
+   * 设置生成Agent函数
+   */
+  public set agentHandler(fn: GetAgentHandler) {
+    this._getAgent = fn;
   }
 
 }
