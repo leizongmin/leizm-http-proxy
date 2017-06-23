@@ -103,6 +103,8 @@ export default class HTTPProxy extends EventEmitter {
   private _debug: DebugHandler = createDebug(`http-proxy:#${ HTTPProxy._counter++ }`);
   /** 生成Agent的函数 */
   private _getAgent: GetAgentHandler = () => false;
+  /** 请求计数器 */
+  private _httpProxyCounter: number = 0;
 
   constructor() {
     super();
@@ -210,7 +212,8 @@ export default class HTTPProxy extends EventEmitter {
     const url = options ? options.url : req.url;
     const headers = options ? options.headers : {};
     const info = parseUrl(url || '');
-    this._debug('http proxy pass: %s %j', url, headers);
+    const num = ++this._httpProxyCounter;
+    this._debug('[#%s] http proxy pass: %s %j', num, url, headers);
     const request = isHttpsProtocol(info.protocol) ? httpsRequest : httpRequest;
     const remoteReq = request({
       host: info.host,
@@ -223,11 +226,11 @@ export default class HTTPProxy extends EventEmitter {
       remoteRes.pipe(res);
     });
     remoteReq.on('error', err => {
-      this._debug('remote request error: %s', err);
+      this._debug('[#%s] remote request error: %s', num, err);
       this._responseError(res, 500, err.stack);
     });
     req.on('error', err => {
-      this._debug('souce request error: %s', err);
+      this._debug('[#%s] souce request error: %s', num, err);
       this._responseError(res, 500, err.stack);
     });
     req.pipe(remoteReq);
