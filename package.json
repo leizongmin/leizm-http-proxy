@@ -1,10 +1,16 @@
 {
   "name": "lei-http-proxy",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "awsome http proxy",
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
-  "files": "dist",
+  "files": [
+    "bin",
+    "dist"
+  ],
+  "bin": {
+    "http-proxy": "bin/http-proxy"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "prepublish": "rm -rf dist && tsc"
@@ -24,11 +30,17 @@
   },
   "homepage": "https://github.com/leizongmin/node-http-proxy#readme",
   "dependencies": {
+    "@types/cli-color": "^0.3.29",
     "@types/debug": "0.0.29",
+    "@types/js-yaml": "^3.5.31",
     "@types/node": "^8.0.1",
     "@types/path-to-regexp": "^1.7.0",
+    "@types/yargs": "^6.6.0",
+    "cli-color": "^1.2.0",
     "debug": "^2.6.8",
-    "path-to-regexp": "^1.7.0"
+    "js-yaml": "^3.8.4",
+    "path-to-regexp": "^1.7.0",
+    "yargs": "^8.0.2"
   },
   "devDependencies": {
     "typescript": "^2.3.4"

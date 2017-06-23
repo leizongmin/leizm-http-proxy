@@ -1,7 +1,10 @@
 # lei-http-proxy
 可灵活配置的 http 代理模块
 
-## 安装
+## 模块
+
+
+### 安装
 
 ```bash
 $ npm install lei-http-proxy --save
@@ -23,6 +26,41 @@ proxy.addRule({
 });
 
 proxy.server.listen(4567, () => console.log('listening...'));
+```
+
+## 命令行工具
+
+### 安装
+
+```bash
+$ npm install lei-http-proxy -g
+```
+
+### 使用方法
+
+首先新建代理配置文件 `proxy.yaml`:
+
+```yaml
+# 代理服务器监听地址
+host: 0.0.0.0
+
+# 代理服务器端口
+port: 4567
+
+# 代理规则
+rules:
+- match: http://morning.work/*
+  proxy: http://ucdok.com/{1}
+  headers:
+    host: jsxss.com
+- match: http://*.qq.com/*
+  proxy: https://www.so.com/s?ie=utf-8&fr=so.com&src=home_so.com&q={1}
+```
+
+然后执行 start 命令启动:
+
+```bash
+$ http-proxy start proxy.yaml
 ```
 
 ## License

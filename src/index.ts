@@ -150,9 +150,11 @@ export default class HTTPProxy extends EventEmitter {
    */
   private _onConnect(req: ServerRequest, socket: Socket, bodyHead: Buffer): void {
     this._debug('on connect: %s %s', req.method, req.url);
-    const { host, port } = getHostPortFromUrl(`https://${ req.url || '' }`);
+    const url = `https://${ req.url || '' }`;
+    const { host, port } = getHostPortFromUrl(url);
     const remoteSocket = new Socket();
     this._debug('connecting to: %s:%s', host, port);
+    this.emit('proxy', { origin: req.url, target: url, method: req.method });
     remoteSocket.connect(port, host, () => {
       const content = `HTTP/${ req.httpVersion } 200 Connection established\r\n\r\n`;
       remoteSocket.write(bodyHead);
@@ -214,6 +216,7 @@ export default class HTTPProxy extends EventEmitter {
     const info = parseUrl(url || '');
     const num = ++this._httpProxyCounter;
     this._debug('[#%s] http proxy pass: %s %j', num, url, headers);
+    this.emit('proxy', { origin: req.url, target: url, method: req.method });
     const request = isHttpsProtocol(info.protocol) ? httpsRequest : httpRequest;
     const remoteReq = request({
       host: info.host,

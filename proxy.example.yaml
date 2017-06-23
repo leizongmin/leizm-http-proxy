@@ -1,0 +1,14 @@
+# 代理服务器监听地址
+host: 0.0.0.0
+
+# 代理服务器端口
+port: 4567
+
+# 代理规则
+rules:
+- match: http://morning.work/*
+  proxy: http://ucdok.com/{1}
+  headers:
+    host: jsxss.com
+- match: http://*.qq.com/*
+  proxy: https://www.so.com/s?ie=utf-8&fr=so.com&src=home_so.com&q={1}
