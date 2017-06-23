@@ -5,7 +5,8 @@
  */
 
 import { Socket } from 'net';
-import { createServer, Server, ServerRequest, ServerResponse, request } from 'http';
+import { createServer, Server, ServerRequest, ServerResponse, request as httpRequest } from 'http';
+import { request as httpsRequest } from 'https';
 import { EventEmitter } from 'events';
 import { parse as parseUrl } from 'url';
 import * as pathToRegexp from 'path-to-regexp';
@@ -18,6 +19,7 @@ export interface Rule {
 
 export interface FormattedRule {
   math: RegExp;
+  id?: string;
   proxy: (req: ServerRequest) => ProxyResult;
 }
 
@@ -29,22 +31,31 @@ export interface ProxyResult {
 function formatRule(rule: Rule): FormattedRule {
   const math = rule.match instanceof RegExp ? rule.match : pathToRegexp(String(rule.match));
   const proxy = typeof rule.proxy === 'function' ? rule.proxy : compileProxyString(rule.proxy);
-  return { math, proxy };
+  return { math, id: String(math), proxy };
 }
 
 function compileProxyString(url: string): (req: ServerRequest) => ProxyResult {
+  const info = parseUrl(url);
   return function (req: ServerRequest): ProxyResult {
-    return {
+    const ret = {
       url: `${ url }${ req.url }`,
       headers: {},
     };
+    if (info.hostname) {
+      ret.headers['host'] = info.hostname;
+    }
+    return ret;
   };
 }
 
 function getHostPortFromUrl(url: string): { host: string, port: number } {
   const info = parseUrl(url);
-  const defaultPort = info.protocol === 'https:' ? 443 : 80;
+  const defaultPort = isHttpsProtocol(info.protocol) ? 443 : 80;
   return { host: info.hostname || '', port: Number(info.port || defaultPort) };
+}
+
+function isHttpsProtocol(protocol: string = 'http'): boolean {
+  return protocol === 'https:';
 }
 
 export default class HTTPProxy extends EventEmitter {
@@ -120,6 +131,7 @@ export default class HTTPProxy extends EventEmitter {
     const headers = options ? options.headers : {};
     const info = parseUrl(url || '');
     this._debug('http proxy pass: %s %j', url, headers);
+    const request = isHttpsProtocol(info.protocol) ? httpsRequest : httpRequest;
     const remoteReq = request({
       host: info.host,
       method: req.method,
@@ -147,11 +159,13 @@ export default class HTTPProxy extends EventEmitter {
 
   public addRule(rule: Rule): void {
     const r = formatRule(rule);
+    this._debug('add rule: %j', r);
     this._rules.set(r.math, r);
   }
 
   public removeRule(rule: Rule): void {
     const r = formatRule(rule);
+    this._debug('remote rule: %j', r);
     this._rules.delete(r.math);
   }
 
