@@ -12,51 +12,108 @@ import { parse as parseUrl } from 'url';
 import * as pathToRegexp from 'path-to-regexp';
 import * as createDebug from 'debug';
 
+/**
+ * 代理规则
+ */
 export interface Rule {
+  /** 规则，可为字符串或正则表达式 */
   match: string | RegExp;
+  /** 生成目标URL的规则 */
   proxy: string | ProxyHandler;
 }
 
+/**
+ * 生成目标URL的函数
+ *
+ * @param req ServerRequest请求对象
+ * @param result 匹配到的URL参数
+ */
 export type ProxyHandler = (req: ServerRequest, result?: string[]) => ProxyResult;
 
+/**
+ * Debug函数
+ */
+export type DebugHandler = (...args: any[]) => void;
+
+/**
+ * 已格式化处理的代理规则
+ */
 export interface FormattedRule {
+  /** 规则正则表达式 */
   match: pathToRegexp.PathRegExp;
+  /** 生成目标URL的函数 */
   proxy: ProxyHandler;
-  id?: string;
+  /** 规则的字符串ID */
+  id: string;
+  /** 匹配到的URL参数 */
   result?: string[],
 }
 
+/**
+ * 代理目标结果
+ */
 export interface ProxyResult {
+  /** 目标URL */
   url: string;
+  /** 额外增加的请求头 */
   headers: Record<string, string>;
 }
 
+/**
+ * 从URL中获取域名和端口
+ *
+ * @param url
+ */
 function getHostPortFromUrl(url: string): { host: string, port: number } {
   const info = parseUrl(url);
   const defaultPort = isHttpsProtocol(info.protocol) ? 443 : 80;
   return { host: info.hostname || '', port: Number(info.port || defaultPort) };
 }
 
-function isHttpsProtocol(protocol: string = 'http'): boolean {
+/**
+ * 检查是否为https协议
+ *
+ * @param protocol 协议名
+ */
+function isHttpsProtocol(protocol: string = 'http:'): boolean {
   return protocol === 'https:';
 }
 
+/**
+ * HTTP代理类
+ */
 export default class HTTPProxy extends EventEmitter {
 
   private static _counter: number = 0;
 
+  /** Server对象 */
   private readonly _server: Server;
+  /** 代理规则 */
   private readonly _rules: Map<RegExp, FormattedRule> = new Map();
-  private readonly _debug: ((...args: any[]) => void) = createDebug(`http-proxy:#${ HTTPProxy._counter++ }`);
+  /** 调试函数 */
+  private _debug: DebugHandler = createDebug(`http-proxy:#${ HTTPProxy._counter++ }`);
 
   constructor() {
     super();
     this._server = createServer();
+    // 处理普通请求
     this._server.on('request', this._onRequest.bind(this));
+    // HTTPS请求只能直接转发
     this._server.on('connect', this._onConnect.bind(this));
+    // 处理出错信息
+    this._server.on('error', err => {
+      this._debug('server error: %s', err);
+      this.emit('error', err);
+    });
     this._debug('inited');
   }
 
+  /**
+   * 处理HTTP请求
+   *
+   * @param req
+   * @param res
+   */
   private _onRequest(req: ServerRequest, res: ServerResponse): void {
     this._debug('on request: %s %s', req.method, req.url);
     if (!req.url) {
@@ -71,6 +128,13 @@ export default class HTTPProxy extends EventEmitter {
     }
   }
 
+  /**
+   * 处理CONNECT请求
+   *
+   * @param req
+   * @param socket
+   * @param bodyHead
+   */
   private _onConnect(req: ServerRequest, socket: Socket, bodyHead: Buffer): void {
     this._debug('on connect: %s %s', req.method, req.url);
     const { host, port } = getHostPortFromUrl(`https://${ req.url || '' }`);
@@ -94,12 +158,25 @@ export default class HTTPProxy extends EventEmitter {
     });
   }
 
+  /**
+   * 客户端响应出错信息
+   *
+   * @param res
+   * @param status
+   * @param msg
+   */
   private _responseError(res: ServerResponse, status: number = 500, msg: string = 'internal error'): void {
     this._debug('response error: %s %s', status, msg);
     res.writeHead(status);
     res.end(`proxy error: ${ msg }`);
+    this.emit('warn', { status, msg });
   }
 
+  /**
+   * 根据URL匹配第一个符合的规则
+   *
+   * @param url
+   */
   private _findRuleByUrl(url: string): FormattedRule | undefined {
     const keys = this._rules.keys();
     for (const key of keys) {
@@ -111,6 +188,13 @@ export default class HTTPProxy extends EventEmitter {
     return;
   }
 
+  /**
+   * HTTP代理转发
+   *
+   * @param req
+   * @param res
+   * @param options
+   */
   private _httpProxyPass(req: ServerRequest, res: ServerResponse, options?: ProxyResult): void {
     const url = options ? options.url : req.url;
     const headers = options ? options.headers : {};
@@ -137,12 +221,23 @@ export default class HTTPProxy extends EventEmitter {
     req.pipe(remoteReq);
   }
 
+  /**
+   * 格式化代理规则
+   *
+   * @param rule
+   */
   private _formatRule(rule: Rule): FormattedRule {
     const match = pathToRegexp(rule.match, { end: false });
     const proxy = typeof rule.proxy === 'function' ? rule.proxy : this._compileProxyString(match, rule.proxy);
     return { match, id: String(match), proxy };
   }
 
+  /**
+   * 编译代理规则字符串
+   *
+   * @param match
+   * @param url
+   */
   private _compileProxyString(match: pathToRegexp.PathRegExp, url: string): ProxyHandler {
     const info = parseUrl(url);
     const handler = (req: ServerRequest, result?: string[]): ProxyResult => {
@@ -167,20 +262,44 @@ export default class HTTPProxy extends EventEmitter {
     return handler;
   }
 
+  /**
+   * 增加代理规则
+   *
+   * @param rule 规则
+   */
   public addRule(rule: Rule): void {
     const r = this._formatRule(rule);
     this._debug('add rule: %j', r);
     this._rules.set(r.match, r);
   }
 
+  /**
+   * 删除代理规则
+   *
+   * @param rule 规则
+   */
   public removeRule(rule: Rule): void {
     const r = this._formatRule(rule);
     this._debug('remote rule: %j', r);
-    this._rules.delete(r.match);
+    this._rules.forEach((item, key) => {
+      if (item.id === r.id) {
+        this._rules.delete(key);
+      }
+    });
   }
 
+  /**
+   * Server对象
+   */
   public get server() {
     return this._server;
+  }
+
+  /**
+   * 设置debug函数
+   */
+  public set debug(fn: DebugHandler)  {
+    this._debug = fn;
   }
 
 }
