@@ -1,0 +1,28 @@
+{
+  "name": "lei-http-proxy",
+  "version": "0.0.1",
+  "description": "awsome http proxy",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/leizongmin/node-http-proxy.git"
+  },
+  "keywords": [
+    "http",
+    "proxy"
+  ],
+  "author": "Zongmin Lei <leizongmin@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/leizongmin/node-http-proxy/issues"
+  },
+  "homepage": "https://github.com/leizongmin/node-http-proxy#readme",
+  "dependencies": {
+    "@types/node": "^8.0.1",
+    "@types/path-to-regexp": "^1.7.0",
+    "path-to-regexp": "^1.7.0"
+  }
+}
