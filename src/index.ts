@@ -14,38 +14,21 @@ import * as createDebug from 'debug';
 
 export interface Rule {
   match: string | RegExp;
-  proxy: string | ((req: ServerRequest) => ProxyResult);
+  proxy: string | ProxyHandler;
 }
 
+export type ProxyHandler = (req: ServerRequest, result?: string[]) => ProxyResult;
+
 export interface FormattedRule {
-  math: RegExp;
+  match: pathToRegexp.PathRegExp;
+  proxy: ProxyHandler;
   id?: string;
-  proxy: (req: ServerRequest) => ProxyResult;
+  result?: string[],
 }
 
 export interface ProxyResult {
   url: string;
   headers: Record<string, string>;
-}
-
-function formatRule(rule: Rule): FormattedRule {
-  const math = rule.match instanceof RegExp ? rule.match : pathToRegexp(String(rule.match));
-  const proxy = typeof rule.proxy === 'function' ? rule.proxy : compileProxyString(rule.proxy);
-  return { math, id: String(math), proxy };
-}
-
-function compileProxyString(url: string): (req: ServerRequest) => ProxyResult {
-  const info = parseUrl(url);
-  return function (req: ServerRequest): ProxyResult {
-    const ret = {
-      url: `${ url }${ req.url }`,
-      headers: {},
-    };
-    if (info.hostname) {
-      ret.headers['host'] = info.hostname;
-    }
-    return ret;
-  };
 }
 
 function getHostPortFromUrl(url: string): { host: string, port: number } {
@@ -81,7 +64,8 @@ export default class HTTPProxy extends EventEmitter {
     }
     const rule = this._findRuleByUrl(req.url);
     if (rule) {
-      this._httpProxyPassByRule(rule, req, res);
+      this._debug('http proxy pass by rule: %j', rule);
+      this._httpProxyPass(req, res, rule.proxy(req, rule.result));
     } else {
       this._httpProxyPass(req, res);
     }
@@ -119,8 +103,9 @@ export default class HTTPProxy extends EventEmitter {
   private _findRuleByUrl(url: string): FormattedRule | undefined {
     const keys = this._rules.keys();
     for (const key of keys) {
-      if (key.test(url)) {
-        return this._rules.get(key);
+      const result = key.exec(url);
+      if (result) {
+        return { ...this._rules.get(key), result };
       }
     }
     return;
@@ -152,21 +137,46 @@ export default class HTTPProxy extends EventEmitter {
     req.pipe(remoteReq);
   }
 
-  private _httpProxyPassByRule(rule: FormattedRule, req: ServerRequest, res: ServerResponse): void {
-    this._debug('http proxy pass by rule: %j', rule);
-    this._httpProxyPass(req, res, rule.proxy(req));
+  private _formatRule(rule: Rule): FormattedRule {
+    const match = pathToRegexp(rule.match, { end: false });
+    const proxy = typeof rule.proxy === 'function' ? rule.proxy : this._compileProxyString(match, rule.proxy);
+    return { match, id: String(match), proxy };
+  }
+
+  private _compileProxyString(match: pathToRegexp.PathRegExp, url: string): ProxyHandler {
+    const info = parseUrl(url);
+    const handler = (req: ServerRequest, result?: string[]): ProxyResult => {
+      const ret = {
+        url,
+        headers: {},
+      };
+      if (info.hostname) {
+        ret.headers['host'] = info.hostname;
+      }
+      if (result) {
+        match.keys.forEach((k, i) => {
+          ret.url = ret.url.replace(`{${ k.name }}`, result[i]);
+        });
+        result.forEach((v, i) => {
+          ret.url = ret.url.replace(`{${ i }}`, v);
+        });
+      }
+      this._debug('reset target url: %s => %s', req.url, ret.url);
+      return ret;
+    };
+    return handler;
   }
 
   public addRule(rule: Rule): void {
-    const r = formatRule(rule);
+    const r = this._formatRule(rule);
     this._debug('add rule: %j', r);
-    this._rules.set(r.math, r);
+    this._rules.set(r.match, r);
   }
 
   public removeRule(rule: Rule): void {
-    const r = formatRule(rule);
+    const r = this._formatRule(rule);
     this._debug('remote rule: %j', r);
-    this._rules.delete(r.math);
+    this._rules.delete(r.match);
   }
 
   public get server() {
