@@ -2,7 +2,9 @@
   "name": "lei-http-proxy",
   "version": "0.0.1",
   "description": "awsome http proxy",
-  "main": "index.js",
+  "main": "dist/index.js",
+  "typings": "dist/index.d.ts",
+  "files": "dist",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
