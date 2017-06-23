@@ -21,8 +21,10 @@
   },
   "homepage": "https://github.com/leizongmin/node-http-proxy#readme",
   "dependencies": {
+    "@types/debug": "0.0.29",
     "@types/node": "^8.0.1",
     "@types/path-to-regexp": "^1.7.0",
+    "debug": "^2.6.8",
     "path-to-regexp": "^1.7.0"
   }
 }

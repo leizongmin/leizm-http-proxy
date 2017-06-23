@@ -4,10 +4,12 @@
  * @author Zongmin Lei <leizongmin@gmail.com>
  */
 
+import { Socket } from 'net';
 import { createServer, Server, ServerRequest, ServerResponse, request } from 'http';
 import { EventEmitter } from 'events';
 import { parse as parseUrl } from 'url';
 import * as pathToRegexp from 'path-to-regexp';
+import * as createDebug from 'debug';
 
 export interface Rule {
   match: string | RegExp;
@@ -39,17 +41,30 @@ function compileProxyString(url: string): (req: ServerRequest) => ProxyResult {
   };
 }
 
+function getHostPortFromUrl(url: string): { host: string, port: number } {
+  const info = parseUrl(url);
+  const defaultPort = info.protocol === 'https:' ? 443 : 80;
+  return { host: info.hostname || '', port: Number(info.port || defaultPort) };
+}
+
 export default class HTTPProxy extends EventEmitter {
+
+  private static _counter: number = 0;
 
   private readonly _server: Server;
   private readonly _rules: Map<RegExp, FormattedRule> = new Map();
+  private readonly _debug: ((...args: any[]) => void) = createDebug(`http-proxy:#${ HTTPProxy._counter++ }`);
 
   constructor() {
     super();
-    this._server = createServer(this._onRequest.bind(this));
+    this._server = createServer();
+    this._server.on('request', this._onRequest.bind(this));
+    this._server.on('connect', this._onConnect.bind(this));
+    this._debug('inited');
   }
 
   private _onRequest(req: ServerRequest, res: ServerResponse): void {
+    this._debug('on request: %s %s', req.method, req.url);
     if (!req.url) {
       return this._responseError(res, 500, 'invalid request');
     }
@@ -61,7 +76,31 @@ export default class HTTPProxy extends EventEmitter {
     }
   }
 
+  private _onConnect(req: ServerRequest, socket: Socket, bodyHead: Buffer): void {
+    this._debug('on connect: %s %s', req.method, req.url);
+    const { host, port } = getHostPortFromUrl(`https://${ req.url || '' }`);
+    const remoteSocket = new Socket();
+    this._debug('connecting to: %s:%s', host, port);
+    remoteSocket.connect(port, host, () => {
+      const content = `HTTP/${ req.httpVersion } 200 Connection established\r\n\r\n`;
+      remoteSocket.write(bodyHead);
+      socket.write(content);
+    });
+    remoteSocket.pipe(socket);
+    remoteSocket.on('error', err => {
+      this._debug('remote socket error: %s', err);
+      const content = `HTTP/${ req.httpVersion } 500 Connection error\r\n\r\n`;
+      socket.end(content);
+    });
+    socket.pipe(remoteSocket);
+    socket.on('error', err => {
+      this._debug('souce socket on error: %s', err);
+      remoteSocket.end();
+    });
+  }
+
   private _responseError(res: ServerResponse, status: number = 500, msg: string = 'internal error'): void {
+    this._debug('response error: %s %s', status, msg);
     res.writeHead(status);
     res.end(`proxy error: ${ msg }`);
   }
@@ -78,8 +117,9 @@ export default class HTTPProxy extends EventEmitter {
 
   private _httpProxyPass(req: ServerRequest, res: ServerResponse, options?: ProxyResult): void {
     const url = options ? options.url : req.url;
-    const headers = options ? req.headers : {};
+    const headers = options ? options.headers : {};
     const info = parseUrl(url || '');
+    this._debug('http proxy pass: %s %j', url, headers);
     const remoteReq = request({
       host: info.host,
       method: req.method,
@@ -89,12 +129,19 @@ export default class HTTPProxy extends EventEmitter {
       res.writeHead(remoteRes.statusCode || 200, remoteRes.headers);
       remoteRes.pipe(res);
     });
-    remoteReq.on('error', err => this._responseError(res, 500, err.stack));
-    req.on('error', err => this._responseError(res, 500, err.stack));
+    remoteReq.on('error', err => {
+      this._debug('remote request error: %s', err);
+      this._responseError(res, 500, err.stack);
+    });
+    req.on('error', err => {
+      this._debug('souce request error: %s', err);
+      this._responseError(res, 500, err.stack);
+    });
     req.pipe(remoteReq);
   }
 
   private _httpProxyPassByRule(rule: FormattedRule, req: ServerRequest, res: ServerResponse): void {
+    this._debug('http proxy pass by rule: %j', rule);
     this._httpProxyPass(req, res, rule.proxy(req));
   }
 
