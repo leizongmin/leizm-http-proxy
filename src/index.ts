@@ -20,6 +20,8 @@ export interface Rule {
   match: string | RegExp;
   /** 生成目标URL的规则 */
   proxy: string | ProxyHandler;
+  /** 额外增加的请求头，仅当proxy为string类型时有效 */
+  headers?: Record<string, string>;
 }
 
 /**
@@ -43,6 +45,8 @@ export interface FormattedRule {
   match: pathToRegexp.PathRegExp;
   /** 生成目标URL的函数 */
   proxy: ProxyHandler;
+  /** 额外增加的请求头 */
+  headers: Record<string, string>;
   /** 规则的字符串ID */
   id: string;
   /** 匹配到的URL参数 */
@@ -228,8 +232,9 @@ export default class HTTPProxy extends EventEmitter {
    */
   private _formatRule(rule: Rule): FormattedRule {
     const match = pathToRegexp(rule.match, { end: false });
-    const proxy = typeof rule.proxy === 'function' ? rule.proxy : this._compileProxyString(match, rule.proxy);
-    return { match, id: String(match), proxy };
+    const proxy = typeof rule.proxy === 'function' ? rule.proxy : this._compileProxyString(match, rule.proxy, rule.headers);
+    const headers = rule.headers || {};
+    return { match, id: String(match), proxy, headers };
   }
 
   /**
@@ -238,7 +243,7 @@ export default class HTTPProxy extends EventEmitter {
    * @param match
    * @param url
    */
-  private _compileProxyString(match: pathToRegexp.PathRegExp, url: string): ProxyHandler {
+  private _compileProxyString(match: pathToRegexp.PathRegExp, url: string, headers: Record<string, string> = {}): ProxyHandler {
     const info = parseUrl(url);
     const handler = (req: ServerRequest, result?: string[]): ProxyResult => {
       const ret = {
@@ -256,6 +261,7 @@ export default class HTTPProxy extends EventEmitter {
           ret.url = ret.url.replace(`{${ i }}`, v);
         });
       }
+      ret.headers = { ...ret.headers, ...headers };
       this._debug('reset target url: %s => %s', req.url, ret.url);
       return ret;
     };
