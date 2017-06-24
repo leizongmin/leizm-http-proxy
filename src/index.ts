@@ -118,6 +118,7 @@ export default class HTTPProxy extends EventEmitter {
       this._debug('server error: %s', err);
       this.emit('error', err);
     });
+    this.on('proxy', info => this._debug('proxy: %j', info));
     this._debug('inited');
   }
 
@@ -154,7 +155,7 @@ export default class HTTPProxy extends EventEmitter {
     const { host, port } = getHostPortFromUrl(url);
     const remoteSocket = new Socket();
     this._debug('connecting to: %s:%s', host, port);
-    this.emit('proxy', { origin: req.url, target: url, method: req.method });
+    this.emit('proxy', { origin: req.url, target: url, method: req.method, rewrite: false });
     remoteSocket.connect(port, host, () => {
       const content = `HTTP/${ req.httpVersion } 200 Connection established\r\n\r\n`;
       remoteSocket.write(bodyHead);
@@ -168,7 +169,7 @@ export default class HTTPProxy extends EventEmitter {
     });
     socket.pipe(remoteSocket);
     socket.on('error', err => {
-      this._debug('souce socket on error: %s', err);
+      this._debug('source socket on error: %s', err);
       remoteSocket.end();
     });
   }
@@ -216,10 +217,11 @@ export default class HTTPProxy extends EventEmitter {
     const info = parseUrl(url || '');
     const num = ++this._httpProxyCounter;
     this._debug('[#%s] http proxy pass: %s %j', num, url, headers);
-    this.emit('proxy', { origin: req.url, target: url, method: req.method });
+    this.emit('proxy', { origin: req.url, target: url, method: req.method, rewrite: req.url !== url });
     const request = isHttpsProtocol(info.protocol) ? httpsRequest : httpRequest;
     const remoteReq = request({
-      host: info.host,
+      host: info.hostname,
+      port: info.port ? Number(info.port) : 80,
       method: req.method,
       path: info.path,
       headers: { ...req.headers, ...headers },
@@ -233,7 +235,7 @@ export default class HTTPProxy extends EventEmitter {
       this._responseError(res, 500, err.stack);
     });
     req.on('error', err => {
-      this._debug('[#%s] souce request error: %s', num, err);
+      this._debug('[#%s] source request error: %s', num, err);
       this._responseError(res, 500, err.stack);
     });
     req.pipe(remoteReq);
@@ -265,7 +267,7 @@ export default class HTTPProxy extends EventEmitter {
         headers: {},
       };
       if (info.hostname) {
-        ret.headers['host'] = info.hostname;
+        ret.headers['host'] = info.host;
       }
       if (result) {
         match.keys.forEach((k, i) => {

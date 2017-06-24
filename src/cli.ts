@@ -43,7 +43,7 @@ function pageLine(): void {
 }
 
 function warn(...args: any[]): void {
-  console.error(clc.bgYellow.white('[warn]') + '\t' + clc.red(util.format.call(util, ...args)));
+  console.error(clc.bgYellow.white('[warn]') + '\t' + clc.yellow(util.format.call(util, ...args)));
 }
 
 function error(...args: any[]): void {
@@ -51,7 +51,7 @@ function error(...args: any[]): void {
 }
 
 function info(...args: any[]): void {
-  console.log(clc.bgBlue.white('[info]') + '\t' + clc.green(util.format.call(util, ...args)));
+  console.log(clc.bgBlue.white('[info]') + '\t' + clc.blue(util.format.call(util, ...args)));
 }
 
 function debug(...args: any[]): void {
@@ -103,7 +103,11 @@ function startProxy(configFile: string): void {
     proxy.debugHandler = debug;
   }
   proxy.on('proxy', proxy => {
-    info('代理 %s %s => %s', proxy.method, proxy.origin, proxy.target);
+    if (proxy.rewrite) {
+      info('改写代理 %s %s => %s', proxy.method, proxy.origin, proxy.target);
+    } else {
+      info('直接代理 %s %s', proxy.method, proxy.origin);
+    }
   });
   config.rules.forEach((rule, i) => {
     if (!(rule.match && typeof rule.match === 'string')) {
