@@ -111,11 +111,20 @@ function isNotUrl(url: string): boolean {
  * @param url
  */
 function removeUrlQueryString(url: string): string {
+  return splitUrlQueryString(url).base;
+}
+
+/**
+ * 分开URL的基本部分和查询字符串部分
+ *
+ * @param url
+ */
+function splitUrlQueryString(url: string): { base: string; qs: string } {
   const i = url.indexOf('?');
   if (i === -1) {
-    return url;
+    return { base: url, qs: '' };
   }
-  return url.slice(0, i);
+  return { base: url.slice(0, i), qs: url.slice(i) };
 }
 
 /**
@@ -163,10 +172,13 @@ export default class HTTPProxy extends EventEmitter {
     if (!req.url) {
       return this._responseError(res, 500, 'invalid request');
     }
-    const rule = this._findRuleByUrl(req.url);
+    const { base, qs } = splitUrlQueryString(req.url);
+    const rule = this._findRuleByUrl(base);
     if (rule) {
       this._debug('http proxy pass by rule: %j', rule);
-      this._httpProxyPass(req, res, rule.proxy(req, rule.result));
+      const result = rule.proxy(req, rule.result);
+      result.url += qs;
+      this._httpProxyPass(req, res, result);
     } else {
       this._httpProxyPass(req, res);
     }
@@ -261,7 +273,6 @@ export default class HTTPProxy extends EventEmitter {
    */
   private _findRuleByUrl(url: string): FormattedRule | undefined {
     const keys = this._rules.keys();
-    url = removeUrlQueryString(url);
     for (const key of keys) {
       const result = key.exec(url);
       if (result) {
