@@ -1,0 +1,13 @@
+# 代理服务器监听地址
+host: 0.0.0.0
+
+# 代理服务器端口
+port: 4567
+
+# 是否打印调试信息
+debug: false
+
+# 代理规则
+rules:
+- match: http://example.com/*
+  proxy: http://morning.work/{1}

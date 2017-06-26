@@ -10,6 +10,7 @@ import * as path from 'path';
 import * as yargs from 'yargs';
 import * as clc from 'cli-color';
 import * as yaml from 'js-yaml';
+import * as fsExtra from 'fs-extra';
 import 'source-map-support/register';
 import HTTPProxy from './';
 const pkgInfo = require('../package');
@@ -85,6 +86,7 @@ function showHelp(): void {
   line('  $ http-proxy start proxy.yaml         启动代理服务器');
   line('  $ http-proxy help                     显示帮助信息');
   line('  $ http-proxy version                  显示版本');
+  line('  $ http-proxy init  proxy.yaml         创建一个示例配置文件');
   emptyLine();
 }
 
@@ -188,6 +190,17 @@ function startProxy(configFile: string): void {
   });
 }
 
+function createExampleConfig(configFile: string): void {
+  if (!configFile) {
+    logger.error('请指定文件名！');
+    emptyLine();
+    process.exit(1);
+  }
+  configFile = path.resolve(configFile);
+  fsExtra.copySync(path.resolve(__dirname, '../bin/proxy.example.yaml'), configFile);
+  logger.info('已生成配置文件: %s', configFile);
+}
+
 function main(): void {
   const cmd = yargs.argv._[0];
   switch (cmd) {
@@ -201,6 +214,10 @@ function main(): void {
     case 'start':
       showWelcome();
       startProxy(yargs.argv._[1]);
+      break;
+    case 'init':
+      showWelcome();
+      createExampleConfig(yargs.argv._[1]);
       break;
     default:
       showWelcome();
