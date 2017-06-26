@@ -3,7 +3,6 @@
 
 ## 模块
 
-
 ### 安装
 
 ```bash
@@ -47,6 +46,9 @@ host: 0.0.0.0
 # 代理服务器端口
 port: 4567
 
+# 是否显示调试信息
+debug: false
+
 # 代理规则
 rules:
 - match: http://morning.work/*
@@ -62,6 +64,8 @@ rules:
 ```bash
 $ http-proxy start proxy.yaml
 ```
+
+**配置文件修改后，会自动重载配置**
 
 ## License
 
