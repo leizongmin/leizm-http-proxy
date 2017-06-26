@@ -267,6 +267,16 @@ export default class HTTPProxy extends EventEmitter {
   }
 
   /**
+   * 向客户端响应欢迎页面
+   *
+   * @param res
+   */
+  private _responseWelcomePage(res: ServerResponse): void {
+    this._debug('[#%s] welcome page');
+    this._responseLocalFile(res, path.resolve(__dirname, '../files/welcome.html'), {});
+  }
+
+  /**
    * 根据URL匹配第一个符合的规则
    *
    * @param url
@@ -292,8 +302,13 @@ export default class HTTPProxy extends EventEmitter {
   private _httpProxyPass(req: ServerRequest, res: ServerResponse, options?: ProxyResult): void {
     const url = (options ? options.url : req.url) || '';
     const headers: HTTPHeaders = options ? options.headers : {};
-    const info = parseUrl(url);
     const num = ++this._httpProxyCounter;
+    const info = parseUrl(url);
+
+    if (!info.hostname) {
+      return this._responseWelcomePage(res);
+    }
+
     this._debug('[#%s] http proxy pass: %s %j', num, url, headers);
     this.emit('proxy', { origin: req.url, target: url, method: req.method, rewrite: req.url !== url });
     if (isNotUrl(url)) {
