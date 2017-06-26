@@ -109,6 +109,12 @@ function startProxy(configFile: string): void {
       info('直接代理 %s %s', proxy.method, proxy.origin);
     }
   });
+  proxy.on('addRule', rule => {
+    info('增加代理规则: %s => %s', rule.match, rule.proxy);
+  });
+  proxy.on('removeRule', rule => {
+    info('删除代理规则: %s => %s', rule.match, rule.proxy);
+  });
   config.rules.forEach((rule, i) => {
     if (!(rule.match && typeof rule.match === 'string')) {
       return warn('第%s个代理配置格式不正确: 缺少match参数: %s', i, rule.match);

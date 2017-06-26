@@ -345,6 +345,7 @@ export default class HTTPProxy extends EventEmitter {
     const r = this._formatRule(rule);
     this._debug('add rule: %j', r);
     this._rules.set(r.match, r);
+    this.emit('addRule', rule);
   }
 
   /**
@@ -360,6 +361,7 @@ export default class HTTPProxy extends EventEmitter {
         this._rules.delete(key);
       }
     });
+    this.emit('removeRule', rule);
   }
 
   /**
