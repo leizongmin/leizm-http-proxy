@@ -254,6 +254,7 @@ export default class HTTPProxy extends EventEmitter {
    */
   private _findRuleByUrl(url: string): FormattedRule | undefined {
     const keys = this._rules.keys();
+    url = removeUrlQueryString(url);
     for (const key of keys) {
       const result = key.exec(url);
       if (result) {
