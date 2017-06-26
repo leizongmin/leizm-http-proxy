@@ -5,11 +5,14 @@
  */
 
 import { Socket } from 'net';
+import * as fs from 'fs';
+import * as path from 'path';
 import { createServer, Server, ServerRequest, ServerResponse, request as httpRequest, Agent } from 'http';
 import { request as httpsRequest } from 'https';
 import { EventEmitter } from 'events';
 import { parse as parseUrl } from 'url';
 import * as pathToRegexp from 'path-to-regexp';
+import * as mime from 'mime';
 import * as createDebug from 'debug';
 
 /**
@@ -85,7 +88,16 @@ function getHostPortFromUrl(url: string): { host: string, port: number } {
  * @param protocol 协议名
  */
 function isHttpsProtocol(protocol: string = 'http:'): boolean {
-  return protocol === 'https:';
+  protocol = protocol || 'http:';
+  return protocol.toLowerCase() === 'https:';
+}
+
+/**
+ * 判断不为URL
+ */
+function isNotUrl(url: string): boolean {
+  url = url.toLowerCase();
+  return !(url.indexOf('http://') === 0 || url.indexOf('https://') === 0);
 }
 
 /**
@@ -175,7 +187,7 @@ export default class HTTPProxy extends EventEmitter {
   }
 
   /**
-   * 客户端响应出错信息
+   * 向客户端响应出错信息
    *
    * @param res
    * @param status
@@ -183,9 +195,42 @@ export default class HTTPProxy extends EventEmitter {
    */
   private _responseError(res: ServerResponse, status: number = 500, msg: string = 'internal error'): void {
     this._debug('response error: %s %s', status, msg);
-    res.writeHead(status);
-    res.end(`proxy error: ${ msg }`);
+    res.writeHead(status, {
+      'content-type': 'text/html',
+    });
+    res.end(`http proxy error:<hr><h1>HTTP ${ status }<br><small>${ msg }</small></h1>`);
     this.emit('warn', { status, msg });
+  }
+
+  /**
+   * 向客户端响应本地文件
+   *
+   * @param res
+   * @param file
+   */
+  private _responseLocalFile(res: ServerResponse, file: string): void {
+    this._debug('response local file: %s', file);
+    const type = mime.lookup(file);
+    fs.stat(file, (err, stats) => {
+      if (err) {
+        return this._responseError(res, err.code === 'ENOENT' ? 404 : 403, err.message);
+      }
+      if (stats.isDirectory()) {
+        return this._responseLocalFile(res, path.join(file, 'index.html'));
+      }
+
+      const s = fs.createReadStream(file);
+      s.on('error', err => {
+        this._responseError(res, 500, err.message);
+      });
+      s.on('open', () => {
+        res.writeHead(200, {
+          'content-type': type,
+          'content-length': stats.size,
+        });
+        s.pipe(res);
+      });
+    });
   }
 
   /**
@@ -212,33 +257,40 @@ export default class HTTPProxy extends EventEmitter {
    * @param options
    */
   private _httpProxyPass(req: ServerRequest, res: ServerResponse, options?: ProxyResult): void {
-    const url = options ? options.url : req.url;
+    const url = (options ? options.url : req.url) || '';
     const headers = options ? options.headers : {};
-    const info = parseUrl(url || '');
+    const info = parseUrl(url);
     const num = ++this._httpProxyCounter;
     this._debug('[#%s] http proxy pass: %s %j', num, url, headers);
     this.emit('proxy', { origin: req.url, target: url, method: req.method, rewrite: req.url !== url });
-    const request = isHttpsProtocol(info.protocol) ? httpsRequest : httpRequest;
-    const remoteReq = request({
-      host: info.hostname,
-      port: info.port ? Number(info.port) : 80,
-      method: req.method,
-      path: info.path,
-      headers: { ...req.headers, ...headers },
-      agent: this._getAgent(),
-    }, (remoteRes) => {
-      res.writeHead(remoteRes.statusCode || 200, remoteRes.headers);
-      remoteRes.pipe(res);
-    });
-    remoteReq.on('error', err => {
-      this._debug('[#%s] remote request error: %s', num, err);
-      this._responseError(res, 500, err.stack);
-    });
-    req.on('error', err => {
-      this._debug('[#%s] source request error: %s', num, err);
-      this._responseError(res, 500, err.stack);
-    });
-    req.pipe(remoteReq);
+    if (isNotUrl(url)) {
+      // 本地文件代理
+      this._debug('[#%s] proxy local file: %s', url);
+      this._responseLocalFile(res, url);
+    } else {
+      // HTTP代理
+      const request = isHttpsProtocol(info.protocol) ? httpsRequest : httpRequest;
+      const remoteReq = request({
+        host: info.hostname,
+        port: info.port ? Number(info.port) : 80,
+        method: req.method,
+        path: info.path,
+        headers: { ...req.headers, ...headers },
+        agent: this._getAgent(),
+      }, (remoteRes) => {
+        res.writeHead(remoteRes.statusCode || 200, remoteRes.headers);
+        remoteRes.pipe(res);
+      });
+      remoteReq.on('error', err => {
+        this._debug('[#%s] remote request error: %s', num, err);
+        this._responseError(res, 500, err.stack);
+      });
+      req.on('error', err => {
+        this._debug('[#%s] source request error: %s', num, err);
+        this._responseError(res, 500, err.stack);
+      });
+      req.pipe(remoteReq);
+    }
   }
 
   /**
