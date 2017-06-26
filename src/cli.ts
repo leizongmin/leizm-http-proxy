@@ -43,19 +43,19 @@ function pageLine(): void {
 }
 
 function warn(...args: any[]): void {
-  console.error(clc.bgYellow.white('[warn]') + '\t' + clc.yellow(util.format.call(util, ...args)));
+  console.error(clc.bgYellow.white(' warn  ') + '\t' + clc.yellow(util.format.call(util, ...args)));
 }
 
 function error(...args: any[]): void {
-  console.error(clc.bgRed.white('[error]') + '\t' + clc.red(util.format.call(util, ...args)));
+  console.error(clc.bgRed.white(' error ') + '\t' + clc.red(util.format.call(util, ...args)));
 }
 
 function info(...args: any[]): void {
-  console.log(clc.bgBlue.white('[info]') + '\t' + clc.blue(util.format.call(util, ...args)));
+  console.log(clc.bgBlue.white(' info  ') + '\t' + clc.blue(util.format.call(util, ...args)));
 }
 
 function debug(...args: any[]): void {
-  console.log(clc.bgGreen.white('[debug]') + '\t' + clc.green(util.format.call(util, ...args)));
+  console.log(clc.bgGreen.white(' debug ') + '\t' + clc.green(util.format.call(util, ...args)));
 }
 
 function showWelcome(): void {
@@ -106,7 +106,7 @@ function startProxy(configFile: string): void {
     if (proxy.rewrite) {
       info('改写代理 %s %s => %s', proxy.method, proxy.origin, proxy.target);
     } else {
-      info('直接代理 %s %s', proxy.method, proxy.origin);
+      debug('直接代理 %s %s', proxy.method, proxy.origin);
     }
   });
   proxy.on('addRule', rule => {
