@@ -101,6 +101,19 @@ function isNotUrl(url: string): boolean {
 }
 
 /**
+ * 删除URL中的查询字符串
+ *
+ * @param url
+ */
+function removeUrlQueryString(url: string): string {
+  const i = url.indexOf('?');
+  if (i === -1) {
+    return url;
+  }
+  return url.slice(0, i);
+}
+
+/**
  * HTTP代理类
  */
 export default class HTTPProxy extends EventEmitter {
@@ -210,6 +223,7 @@ export default class HTTPProxy extends EventEmitter {
    */
   private _responseLocalFile(res: ServerResponse, file: string): void {
     this._debug('response local file: %s', file);
+    file = removeUrlQueryString(file);
     const type = mime.lookup(file);
     fs.stat(file, (err, stats) => {
       if (err) {
@@ -308,7 +322,7 @@ export default class HTTPProxy extends EventEmitter {
    * @param rule
    */
   private _formatRule(rule: Rule): FormattedRule {
-    const match = pathToRegexp(rule.match, { end: false });
+    const match = pathToRegexp(rule.match, { end: true });
     const proxy = typeof rule.proxy === 'function' ? rule.proxy : this._compileProxyString(match, rule.proxy, rule.headers);
     const headers = rule.headers || {};
     return { match, id: String(match), proxy, headers };
