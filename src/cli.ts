@@ -13,7 +13,6 @@ import * as yaml from 'js-yaml';
 import HTTPProxy from './';
 const pkgInfo = require('../package');
 
-console.log(yargs.argv);
 main();
 
 interface Config {
@@ -75,16 +74,12 @@ function showHelp(): void {
   emptyLine();
 }
 
-function startProxy(configFile: string): void {
-  if (!configFile) {
-    error('请指定配置文件！');
-    emptyLine();
-    process.exit(1);
-  }
-  configFile = path.resolve(configFile);
+function loadConfig(configFile: string): Config {
   info('读取配置文件: %s', configFile);
   const config: Config = yaml.safeLoad(fs.readFileSync(configFile).toString());
-
+  if (!config) {
+    error('读取配置文件出错: %s', configFile);
+  }
   if (!config.host) {
     config.host = '127.0.0.1';
   }
@@ -96,12 +91,20 @@ function startProxy(configFile: string): void {
     config.rules = [];
   }
   config.debug = !!config.debug;
+  return config;
+}
+
+function startProxy(configFile: string): void {
+  if (!configFile) {
+    error('请指定配置文件！');
+    emptyLine();
+    process.exit(1);
+  }
+  configFile = path.resolve(configFile);
+  let config = loadConfig(configFile);
 
   info('正在启动代理服务器...');
   const proxy = new HTTPProxy();
-  if (config.debug) {
-    proxy.debugHandler = debug;
-  }
   proxy.on('proxy', proxy => {
     if (proxy.rewrite) {
       info('改写代理 %s %s => %s', proxy.method, proxy.origin, proxy.target);
@@ -115,24 +118,59 @@ function startProxy(configFile: string): void {
   proxy.on('removeRule', rule => {
     info('删除代理规则: %s => %s', rule.match, rule.proxy);
   });
-  config.rules.forEach((rule, i) => {
-    if (!(rule.match && typeof rule.match === 'string')) {
-      return warn('第%s个代理配置格式不正确: 缺少match参数: %s', i, rule.match);
-    }
-    if (!(rule.proxy && typeof rule.proxy === 'string')) {
-      return warn('第%s个代理配置格式不正确: 缺少proxy参数: %s', i, rule.proxy);
-    }
-    if (rule.match.indexOf('http://') !== 0) {
-      return warn('第%s个代理配置格式不正确: 只支持更改http协议的请求: %s', i, rule.match);
-    }
-    proxy.addRule(rule);
+  proxy.on('error', err => {
+    error('%s', err.stack);
   });
+
+  // 加载规则到proxy
+  const setConfigToProxy = () => {
+    if (config.debug) {
+      info('打开调试输出');
+      proxy.debugHandler = debug;
+    } else {
+      info('关闭调试输出');
+      proxy.debugHandler = () => {};
+    }
+    proxy.removeAllRules();
+    config.rules.forEach((rule, i) => {
+      if (!(rule.match && typeof rule.match === 'string')) {
+        return warn('第%s个代理配置格式不正确: 缺少match参数: %s', i, rule.match);
+      }
+      if (!(rule.proxy && typeof rule.proxy === 'string')) {
+        return warn('第%s个代理配置格式不正确: 缺少proxy参数: %s', i, rule.proxy);
+      }
+      if (rule.match.indexOf('http://') !== 0) {
+        return warn('第%s个代理配置格式不正确: 只支持更改http协议的请求: %s', i, rule.match);
+      }
+      proxy.addRule(rule);
+    });
+    pageLine();
+  }
+  setConfigToProxy();
+
+  // 重载配置文件
+  let reloadConfigTid: NodeJS.Timer;
+  const reloadConfig = () => {
+    const delay = 2;
+    debug('%s秒后重载配置...', delay);
+    clearTimeout(reloadConfigTid);
+    reloadConfigTid = setTimeout(() => {
+      config = loadConfig(configFile);
+      setConfigToProxy();
+    }, delay * 1000);
+  }
+
   proxy.server.listen(config.port, config.host, () => {
     info('服务器已启动');
     info('请设置代理服务器为 http://%s:%s', config.host === '0.0.0.0' ? '127.0.0.1' : config.host, config.port);
   });
-  proxy.on('error', err => {
-    error('%s', err.stack);
+
+  // 重载配置
+  fs.watch(configFile, (event, filename) => {
+    if (event === 'change') {
+      info('配置文件已改变: %s %s', event, filename);
+      reloadConfig();
+    }
   });
 }
 

@@ -386,13 +386,21 @@ export default class HTTPProxy extends EventEmitter {
    */
   public removeRule(rule: Rule): void {
     const r = this._formatRule(rule);
-    this._debug('remote rule: %j', r);
+    this._debug('remove rule: %j', r);
     this._rules.forEach((item, key) => {
       if (item.id === r.id) {
         this._rules.delete(key);
       }
     });
     this.emit('removeRule', rule);
+  }
+
+  /**
+   * 删除所有代理规则
+   */
+  public removeAllRules(): void {
+    this._debug('remove all rules: %j', this._rules);
+    this._rules.clear();
   }
 
   /**
