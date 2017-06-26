@@ -57,6 +57,8 @@ rules:
     host: jsxss.com
 - match: http://*.qq.com/*
   proxy: https://www.so.com/s?ie=utf-8&fr=so.com&src=home_so.com&q={1}
+- match: http://example.com
+  proxy: /site/example.com
 ```
 
 然后执行 start 命令启动:
@@ -66,6 +68,13 @@ $ http-proxy start proxy.yaml
 ```
 
 **配置文件修改后，会自动重载配置**
+
+## 配置规则说明
+
++ `match` 参数使用 [path-to-regexp](https://www.npmjs.com/package/path-to-regexp) 模块解析，可以使用通配符
+`*` 或者 `:name` 来命名模糊匹配部分，或者使用用正则表达式
++ `proxy` 参数内可以使用 `{name}` 来代替匹配到的可变部分
++ `headers` 参数可用于指定一些自定义的相应头
 
 ## License
 
