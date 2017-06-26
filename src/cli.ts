@@ -59,10 +59,21 @@ function debug(...args: any[]): void {
 
 function showWelcome(): void {
   pageLine();
+  showBanner();
   line('%s v%s', pkgInfo.name, pkgInfo.version)
   line('  by %s', pkgInfo.author);
   line('  使用过程中有任何疑问请访问 %s', pkgInfo.bugs && pkgInfo.bugs.url || pkgInfo.homepage);
   pageLine();
+}
+
+function showBanner(): void {
+  console.log(clc.cyan(`
+       __               __  __  __        __   __   __
+ /    /    /      /  | /|  /|  /  |      /  | /  | /  | / /  /  |
+(    (___ (      (___|( | ( | (___|     (___|(___|(   |(_/_ (___|
+|   )|    |      |   )  |   | |         |    |\   |   ) /  )    )
+|__/ |__  |      |  /   |   | |         |    | \  |__/ /  /  __/
+`));
 }
 
 function showHelp(): void {
