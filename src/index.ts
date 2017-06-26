@@ -141,7 +141,7 @@ export default class HTTPProxy extends EventEmitter {
    * @param res
    */
   private _onRequest(req: ServerRequest, res: ServerResponse): void {
-    this._debug('on request: %s %s', req.method, req.url);
+    this._debug('on request: %s %s %j', req.method, req.url, req.headers);
     if (!req.url) {
       return this._responseError(res, 500, 'invalid request');
     }
@@ -258,7 +258,7 @@ export default class HTTPProxy extends EventEmitter {
    */
   private _httpProxyPass(req: ServerRequest, res: ServerResponse, options?: ProxyResult): void {
     const url = (options ? options.url : req.url) || '';
-    const headers = options ? options.headers : {};
+    const headers: Record<string, string | string[] | undefined> = options ? options.headers : {};
     const info = parseUrl(url);
     const num = ++this._httpProxyCounter;
     this._debug('[#%s] http proxy pass: %s %j', num, url, headers);
@@ -268,6 +268,11 @@ export default class HTTPProxy extends EventEmitter {
       this._debug('[#%s] proxy local file: %s', url);
       this._responseLocalFile(res, url);
     } else {
+      // 处理connection请求头
+      if (req.headers['proxy-connection']) {
+        headers['connection'] = req.headers['proxy-connection'];
+        delete req.headers['proxy-connection'];
+      }
       // HTTP代理
       const request = isHttpsProtocol(info.protocol) ? httpsRequest : httpRequest;
       const remoteReq = request({
@@ -278,6 +283,7 @@ export default class HTTPProxy extends EventEmitter {
         headers: { ...req.headers, ...headers },
         agent: this._getAgent(),
       }, (remoteRes) => {
+        this._debug('[#%s] remote response: %s %j', num, remoteRes.statusCode, remoteRes.headers);
         res.writeHead(remoteRes.statusCode || 200, remoteRes.headers);
         remoteRes.pipe(res);
       });
@@ -288,6 +294,9 @@ export default class HTTPProxy extends EventEmitter {
       req.on('error', err => {
         this._debug('[#%s] source request error: %s', num, err);
         this._responseError(res, 500, err.stack);
+      });
+      req.on('close', () => {
+        this._debug('[#%s] source request close', num);
       });
       req.pipe(remoteReq);
     }
