@@ -6,7 +6,8 @@
   "typings": "dist/index.d.ts",
   "files": [
     "bin",
-    "dist"
+    "dist",
+    "files"
   ],
   "bin": {
     "http-proxy": "bin/http-proxy"

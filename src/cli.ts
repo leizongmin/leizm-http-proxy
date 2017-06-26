@@ -197,7 +197,7 @@ function createExampleConfig(configFile: string): void {
     process.exit(1);
   }
   configFile = path.resolve(configFile);
-  fsExtra.copySync(path.resolve(__dirname, '../bin/proxy.example.yaml'), configFile);
+  fsExtra.copySync(path.resolve(__dirname, '../files/proxy.example.yaml'), configFile);
   logger.info('已生成配置文件: %s', configFile);
 }
 
