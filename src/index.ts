@@ -24,7 +24,7 @@ export interface Rule {
   /** 生成目标URL的规则 */
   proxy: string | ProxyHandler;
   /** 额外增加的请求头，仅当proxy为string类型时有效 */
-  headers?: Record<string, string>;
+  headers?: HTTPHeaders;
 }
 
 /**
@@ -59,7 +59,7 @@ export interface FormattedRule {
   /** 生成目标URL的函数 */
   proxy: ProxyHandler;
   /** 额外增加的请求头 */
-  headers: Record<string, string>;
+  headers: HTTPHeaders;
   /** 规则的字符串ID */
   id: string;
   /** 匹配到的URL参数 */
@@ -73,7 +73,7 @@ export interface ProxyResult {
   /** 目标URL */
   url: string;
   /** 额外增加的请求头 */
-  headers: Record<string, string>;
+  headers: HTTPHeaders;
 }
 
 /**
@@ -280,7 +280,7 @@ export default class HTTPProxy extends EventEmitter {
    */
   private _httpProxyPass(req: ServerRequest, res: ServerResponse, options?: ProxyResult): void {
     const url = (options ? options.url : req.url) || '';
-    const headers: Record<string, string | string[] | undefined> = options ? options.headers : {};
+    const headers: HTTPHeaders = options ? options.headers : {};
     const info = parseUrl(url);
     const num = ++this._httpProxyCounter;
     this._debug('[#%s] http proxy pass: %s %j', num, url, headers);
@@ -342,7 +342,7 @@ export default class HTTPProxy extends EventEmitter {
    * @param match
    * @param url
    */
-  private _compileProxyString(match: pathToRegexp.PathRegExp, url: string, headers: Record<string, string> = {}): ProxyHandler {
+  private _compileProxyString(match: pathToRegexp.PathRegExp, url: string, headers: HTTPHeaders = {}): ProxyHandler {
     const info = parseUrl(url);
     const handler = (req: ServerRequest, result?: string[]): ProxyResult => {
       const ret = {
