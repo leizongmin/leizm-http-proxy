@@ -305,7 +305,8 @@ export default class HTTPProxy extends EventEmitter {
     const num = ++this._httpProxyCounter;
     const info = parseUrl(url);
 
-    if (!info.hostname) {
+    // 如果是直接打开代理服务器，显示欢迎页面
+    if (!parseUrl(req.url || '').hostname) {
       return this._responseWelcomePage(res);
     }
 
