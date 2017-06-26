@@ -46,6 +46,11 @@ export type DebugHandler = (...args: any[]) => void;
 export type GetAgentHandler = () => Agent | false | undefined;
 
 /**
+ * HTTP请求头
+ */
+export type HTTPHeaders = Record<string, string | string[] | undefined>;
+
+/**
  * 已格式化处理的代理规则
  */
 export interface FormattedRule {
@@ -220,8 +225,9 @@ export default class HTTPProxy extends EventEmitter {
    *
    * @param res
    * @param file
+   * @param headers
    */
-  private _responseLocalFile(res: ServerResponse, file: string): void {
+  private _responseLocalFile(res: ServerResponse, file: string, headers: HTTPHeaders): void {
     this._debug('response local file: %s', file);
     file = removeUrlQueryString(file);
     const type = mime.lookup(file);
@@ -230,7 +236,7 @@ export default class HTTPProxy extends EventEmitter {
         return this._responseError(res, err.code === 'ENOENT' ? 404 : 403, err.message);
       }
       if (stats.isDirectory()) {
-        return this._responseLocalFile(res, path.join(file, 'index.html'));
+        return this._responseLocalFile(res, path.join(file, 'index.html'), headers);
       }
 
       const s = fs.createReadStream(file);
@@ -239,6 +245,7 @@ export default class HTTPProxy extends EventEmitter {
       });
       s.on('open', () => {
         res.writeHead(200, {
+          ...headers,
           'content-type': type,
           'content-length': stats.size,
         });
@@ -281,7 +288,7 @@ export default class HTTPProxy extends EventEmitter {
     if (isNotUrl(url)) {
       // 本地文件代理
       this._debug('[#%s] proxy local file: %s', url);
-      this._responseLocalFile(res, url);
+      this._responseLocalFile(res, url, headers);
     } else {
       // 处理connection请求头
       if (req.headers['proxy-connection']) {
