@@ -1,6 +1,6 @@
 {
   "name": "lei-http-proxy",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "awsome http proxy",
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
