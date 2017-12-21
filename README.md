@@ -1,4 +1,6 @@
 # lei-http-proxy
+
+[![Greenkeeper badge](https://badges.greenkeeper.io/leizongmin/node-http-proxy.svg)](https://greenkeeper.io/)
 可灵活配置的 http 代理模块
 
 ## 模块
