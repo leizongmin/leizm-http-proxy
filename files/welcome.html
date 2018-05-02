@@ -1,14 +1,44 @@
 <!doctype html>
 <html>
-  <head>
-    <meta charset="utf-8">
-    <title>欢迎使用 @leizm/http-proxy</title>
-  </head>
-  <body>
-    <h1>欢迎使用 @leizm/http-proxy</h1>
-    <h3>&nbsp;&nbsp;Powered by Zongmin Lei &lt;leizongmin@gmail.com&gt;</h3>
-    <h3>&nbsp;&nbsp;使用过程中有任何疑问请访问 <a href="https://github.com/leizongmin/node-http-proxy/issues">https://github.com/leizongmin/node-http-proxy/issues</a></h3>
-    <hr>
-    <h3>请设置浏览器的HTTP代理服务器</h3>
-  </body>
+
+<head>
+  <meta charset="utf-8">
+  <title>欢迎使用 @leizm/http-proxy | 一个简单灵活的 HTTP 代理服务器</title>
+  <style>
+    html {
+      background-color: #eee;
+    }
+
+    body {
+      background-color: #fff;
+      padding: 20px;
+      margin: 20px 40px;
+      color: #555;
+      font-family: monospace;
+    }
+
+    #server {
+      padding: 2px;
+      color: #fff;
+      background-color: #555;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>欢迎使用 @leizm/http-proxy</h1>
+  <p>&nbsp;&nbsp;一个简单灵活的 HTTP 代理服务器</p>
+  <p>&nbsp;&nbsp;Powered by Zongmin Lei &lt;leizongmin@gmail.com&gt;</p>
+  <p>&nbsp;&nbsp;使用过程中有任何疑问请访问
+    <a href="https://github.com/leizongmin/node-http-proxy/issues" target="_blank">https://github.com/leizongmin/leizm-http-proxy/issues</a>
+  </p>
+  <hr>
+  <h3>请设置浏览器的HTTP代理服务器为
+    <span id="server"></span>
+  </h3>
+</body>
+<script>
+  document.getElementById("server").innerText = location.host;
+</script>
+
 </html>

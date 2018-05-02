@@ -1,6 +1,6 @@
 # @leizm/http-proxy
 
-可灵活配置的 http 代理模块
+一个简单灵活的 HTTP 代理服务器
 
 ## 命令行工具
 

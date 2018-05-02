@@ -1,7 +1,7 @@
 {
   "name": "@leizm/http-proxy",
   "version": "1.0.0",
-  "description": "Awsome http proxy, configurable and flexible",
+  "description": "Awsome HTTP proxy, configurable and flexible 一个简单灵活的 HTTP 代理服务器",
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
   "files": [
