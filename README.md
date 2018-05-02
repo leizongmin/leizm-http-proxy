@@ -1,38 +1,13 @@
-# lei-http-proxy
+# @leizm/http-proxy
+
 可灵活配置的 http 代理模块
-
-## 模块
-
-### 安装
-
-```bash
-$ npm install lei-http-proxy --save
-```
-
-## 使用方法
-
-```typescript
-import HTTPProxy from 'lei-http-proxy';
-
-const proxy = new HTTPProxy();
-
-proxy.addRule({
-  match: 'http://morning.work/*',
-  proxy: 'http://ucdok.com/{1}',
-  headers: {
-    host: 'jsxss.com',
-  },
-});
-
-proxy.server.listen(4567, () => console.log('listening...'));
-```
 
 ## 命令行工具
 
 ### 安装
 
 ```bash
-$ npm install lei-http-proxy -g
+npm i @leizm/http-proxy -g
 ```
 
 ### 使用方法
@@ -64,24 +39,50 @@ rules:
 然后执行 start 命令启动:
 
 ```bash
-$ http-proxy start proxy.yaml
+http-proxy start proxy.yaml
 ```
 
-**配置文件修改后，会自动重载配置**
+说明：**配置文件修改后，会自动重载配置**
 
-## 配置规则说明
+### 配置规则说明
 
-+ `match` 参数使用 [path-to-regexp](https://www.npmjs.com/package/path-to-regexp) 模块解析，可以使用通配符
+* `match` 参数使用 [path-to-regexp](https://www.npmjs.com/package/path-to-regexp) 模块解析，可以使用通配符
 `*` 或者 `:name` 来命名模糊匹配部分，或者使用用正则表达式
-+ `proxy` 参数内可以使用 `{name}` 来代替匹配到的可变部分
-+ `headers` 参数可用于指定一些自定义的相应头
+* `proxy` 参数内可以使用 `{name}` 来代替匹配到的可变部分
+* `headers` 参数可用于指定一些自定义的相应头
+
+## 作为模块使用
+
+### 安装
+
+```bash
+npm install @leizm/http-proxy --save
+```
+
+## 使用方法
+
+```typescript
+import HTTPProxy from '@leizm/http-proxy';
+
+const proxy = new HTTPProxy();
+
+proxy.addRule({
+  match: 'http://morning.work/*',
+  proxy: 'http://ucdok.com/{1}',
+  headers: {
+    host: 'jsxss.com',
+  },
+});
+
+proxy.server.listen(4567, () => console.log('listening...'));
+```
 
 ## License
 
-```
+```text
 MIT License
 
-Copyright (c) 2017 Zongmin Lei <leizongmin@gmail.com>
+Copyright (c) 2017-2018 Zongmin Lei <leizongmin@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

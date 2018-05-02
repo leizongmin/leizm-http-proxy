@@ -1,5 +1,5 @@
 /**
- * lei-http-proxy
+ * @leizm/http-proxy
  *
  * @author Zongmin Lei <leizongmin@gmail.com>
  */
