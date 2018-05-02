@@ -1,0 +1,5 @@
+apps:
+  - name: http-proxy
+    script: start.js
+    instances: 1
+    exec_mode: fork

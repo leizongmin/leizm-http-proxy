@@ -38,12 +38,7 @@ function emptyLine(): void {
 }
 
 function pageLine(): void {
-  console.log(
-    "----------------------------------------------------------------------------------------------------------------------------------------------------------------".slice(
-      0,
-      (process.stdout as any).columns,
-    ),
-  );
+  console.log(clc.cyan("-".repeat(process.stdout.columns!)));
 }
 
 const logger = {
@@ -70,9 +65,10 @@ const logger = {
 function showWelcome(): void {
   pageLine();
   showBanner();
-  line("%s v%s", pkgInfo.name, pkgInfo.version);
-  line("  Powered by %s", pkgInfo.author);
-  line("  使用过程中有任何疑问请访问 %s", (pkgInfo.bugs && pkgInfo.bugs.url) || pkgInfo.homepage);
+  line(clc.cyan("%s v%s"), pkgInfo.name, pkgInfo.version);
+  line(clc.cyan("  Powered by %s"), pkgInfo.author);
+  line(clc.cyan("  使用过程中有任何疑问请访问 %s"), (pkgInfo.bugs && pkgInfo.bugs.url) || pkgInfo.homepage);
+  line();
   pageLine();
 }
 
@@ -89,12 +85,13 @@ function showBanner(): void {
 }
 
 function showHelp(): void {
+  line();
   line("  使用方法:");
   emptyLine();
-  line("  $ http-proxy start proxy.yaml         启动代理服务器");
+  line("  $ http-proxy start config.yaml        启动代理服务器");
   line("  $ http-proxy help                     显示帮助信息");
   line("  $ http-proxy version                  显示版本");
-  line("  $ http-proxy init  proxy.yaml         创建一个示例配置文件");
+  line("  $ http-proxy init [dir]               创建一个示例项目");
   emptyLine();
 }
 
@@ -198,15 +195,16 @@ function startProxy(configFile: string): void {
   });
 }
 
-function createExampleConfig(configFile: string): void {
-  if (!configFile) {
-    logger.error("请指定文件名！");
-    emptyLine();
-    process.exit(1);
-  }
-  configFile = path.resolve(configFile);
-  fsExtra.copySync(path.resolve(__dirname, "../files/proxy.example.yaml"), configFile);
-  logger.info("已生成配置文件: %s", configFile);
+function createExample(dir: string): void {
+  const configFile = path.resolve(dir, "config.yaml");
+  const pm2File = path.resolve(dir, "pm2.yaml");
+  const mainFile = path.resolve(dir, "start.js");
+  fsExtra.copySync(path.resolve(__dirname, "../files/config.example.yaml"), configFile);
+  fsExtra.copySync(path.resolve(__dirname, "../files/pm2.example.yaml"), pm2File);
+  fsExtra.copySync(path.resolve(__dirname, "../files/main.example.js"), mainFile);
+  logger.info("已生成示例配置: %s", dir);
+  logger.info("命令行启动服务: http-proxy start config.yaml");
+  logger.info("使用 PM2 启动:  pm2 start pm2.yaml");
 }
 
 function main(): void {
@@ -221,11 +219,11 @@ function main(): void {
       break;
     case "start":
       showWelcome();
-      startProxy(yargs.argv._[1]);
+      startProxy(yargs.argv._[1] || "config.yaml");
       break;
     case "init":
       showWelcome();
-      createExampleConfig(yargs.argv._[1]);
+      createExample(yargs.argv._[1] || ".");
       break;
     default:
       showWelcome();
