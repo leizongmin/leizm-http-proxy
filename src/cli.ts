@@ -139,6 +139,9 @@ function startProxy(configFile: string): void {
   proxy.on("removeRule", rule => {
     logger.info("删除代理规则: %s => %s", rule.match, rule.proxy);
   });
+  proxy.on("responseError", (status, msg) => {
+    logger.warn("请求响应出错：#%s %s", status, msg);
+  });
   proxy.on("error", err => {
     logger.error("%s", err.stack);
   });

@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="utf-8">
-  <title>欢迎使用 @leizm/http-proxy | 一个简单灵活的 HTTP 代理服务器</title>
+  <title>{{title}}</title>
   <style>
     html {
       background-color: #eee;
@@ -19,24 +19,24 @@
       font-size: 14px;
     }
 
-    #server {
-      padding: 2px;
-      color: #fff;
-      background-color: #555;
+    #message {
+      color: #d20707;
+      margin-bottom: 5em;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      word-break: break-all;
     }
   </style>
 </head>
 
 <body>
-  <h1>欢迎使用 @leizm/http-proxy</h1>
+  <h1>{{title}}</h1>
+  <pre id="message">{{message}}</pre>
+  <hr>
   <p>&nbsp;&nbsp;一个简单灵活的 HTTP 代理服务器</p>
   <p>&nbsp;&nbsp;Powered by Zongmin Lei &lt;leizongmin@gmail.com&gt;</p>
   <p>&nbsp;&nbsp;使用过程中有任何疑问请访问
     <a href="https://github.com/leizongmin/node-http-proxy/issues" target="_blank">https://github.com/leizongmin/leizm-http-proxy/issues</a>
-  </p>
-  <hr>
-  <p>&nbsp;&nbsp;请设置浏览器的HTTP代理服务器为
-    <span id="server"></span>
   </p>
 </body>
 <script>

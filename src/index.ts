@@ -231,11 +231,22 @@ export default class HTTPProxy extends EventEmitter {
    */
   private _responseError(res: ServerResponse, status: number = 500, msg: string = "internal error"): void {
     this._debug("response error: %s %s", status, msg);
+    this.emit("responseError", status, msg);
     res.writeHead(status, {
       "content-type": "text/html",
     });
-    res.end(`http proxy error:<hr><h1>HTTP ${status}<br><small>${msg}</small></h1>`);
-    this.emit("warn", { status, msg });
+    fs.readFile(path.resolve(__dirname, "../files/error.html"), (err, tpl) => {
+      if (err) {
+        this.emit("error", err);
+        res.end(`<h1>HTTP ${status} <small>${msg}</small></h1>`);
+        return;
+      }
+      const html = tpl
+        .toString()
+        .replace(/\{\{title\}\}/g, "服务器出错")
+        .replace(/\{\{message\}\}/g, `HTTP ${status} ${msg}`);
+      res.end(html);
+    });
   }
 
   /**
