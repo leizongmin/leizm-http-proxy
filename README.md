@@ -52,8 +52,8 @@ rules:
   proxy: http://ucdok.com/{1}
   headers:
     host: jsxss.com
-- match: http://*.qq.com/(.*)
-  proxy: https://www.so.com/s?ie=utf-8&fr=so.com&src=home_so.com&q={1}
+- match: http://(.*).qq.com/(.*)
+  proxy: https://www.so.com/s?ie=utf-8&fr=so.com&src={1}&q={2}
 - match: http://example.com
   proxy: /site/example.com
 ```
@@ -78,7 +78,7 @@ http-proxy start proxy.yaml
 ### 安装
 
 ```bash
-npm install @leizm/http-proxy --save
+npm i @leizm/http-proxy -S
 ```
 
 ## 使用方法
