@@ -9,5 +9,5 @@ debug: false
 
 # 代理规则
 rules:
-- match: http://example.com/*
+- match: http://example.com/(.*)
   proxy: http://morning.work/{1}

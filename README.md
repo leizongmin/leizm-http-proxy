@@ -67,7 +67,7 @@ import HTTPProxy from '@leizm/http-proxy';
 const proxy = new HTTPProxy();
 
 proxy.addRule({
-  match: 'http://morning.work/*',
+  match: 'http://morning.work/(.*)',
   proxy: 'http://ucdok.com/{1}',
   headers: {
     host: 'jsxss.com',

@@ -7,10 +7,7 @@
     "outDir": "dist",
     "sourceMap": true,
     "declaration": true,
-    "noImplicitAny": true,
-    "strictNullChecks": true,
-    "noImplicitReturns": true,
     "noUnusedLocals": true,
-    "suppressImplicitAnyIndexErrors": true
+    "strict": true
   }
 }
