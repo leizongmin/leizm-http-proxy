@@ -46,19 +46,21 @@ const logger = {
     return clc.bgGreen.white(`[${new Date().toLocaleTimeString()}]`) + " ";
   },
   warn(...args: any[]): void {
-    console.error(this.getTime() + clc.bgYellow.white(" warn  ") + " " + clc.yellow(util.format.call(util, ...args)));
+    console.error(
+      this.getTime() + clc.bgYellow.white(" warn  ") + " " + clc.yellow(util.format.apply(util, args as any)),
+    );
   },
   error(...args: any[]): void {
-    console.error(this.getTime() + clc.bgRed.white(" error ") + " " + clc.red(util.format.call(util, ...args)));
+    console.error(this.getTime() + clc.bgRed.white(" error ") + " " + clc.red(util.format.apply(util, args as any)));
   },
   info(...args: any[]): void {
-    console.log(this.getTime() + clc.bgBlue.white(" info  ") + " " + clc.blue(util.format.call(util, ...args)));
+    console.log(this.getTime() + clc.bgBlue.white(" info  ") + " " + clc.blue(util.format.apply(util, args as any)));
   },
   debug(...args: any[]): void {
-    console.log(this.getTime() + clc.bgGreen.white(" debug ") + " " + clc.green(util.format.call(util, ...args)));
+    console.log(this.getTime() + clc.bgGreen.white(" debug ") + " " + clc.green(util.format.apply(util, args as any)));
   },
   trace(...args: any[]): void {
-    console.log(this.getTime() + clc.bgGreen.white(" trace ") + " " + clc.green(util.format.call(util, ...args)));
+    console.log(this.getTime() + clc.bgGreen.white(" trace ") + " " + clc.green(util.format.apply(util, args as any)));
   },
 };
 
@@ -238,5 +240,11 @@ function main(): void {
   }
 }
 
-process.on("uncaughtException", err => logger.error(err.stack));
-process.on("unhandledRejection", err => logger.error(err.stack));
+process.on("uncaughtException", err => logger.error(err.stack || err.message));
+process.on("unhandledRejection", err => {
+  if (err instanceof Error) {
+    logger.error(err.stack || err.message);
+  } else {
+    logger.error(err);
+  }
+});

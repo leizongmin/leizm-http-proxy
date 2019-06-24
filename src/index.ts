@@ -7,7 +7,7 @@
 import { Socket } from "net";
 import * as fs from "fs";
 import * as path from "path";
-import { createServer, Server, ServerRequest, ServerResponse, request as httpRequest, Agent } from "http";
+import { createServer, Server, IncomingMessage, ServerResponse, request as httpRequest, Agent } from "http";
 import { request as httpsRequest } from "https";
 import { EventEmitter } from "events";
 import { parse as parseUrl } from "url";
@@ -33,7 +33,7 @@ export interface Rule {
  * @param req ServerRequest请求对象
  * @param result 匹配到的URL参数
  */
-export type ProxyHandler = (req: ServerRequest, result?: RegExpExecArray) => ProxyResult;
+export type ProxyHandler = (req: IncomingMessage, result?: RegExpExecArray) => ProxyResult;
 
 /**
  * Debug函数
@@ -173,7 +173,7 @@ export default class HTTPProxy extends EventEmitter {
    * @param req
    * @param res
    */
-  private _onRequest(req: ServerRequest, res: ServerResponse): void {
+  private _onRequest(req: IncomingMessage, res: ServerResponse): void {
     this._debug("on request: %s %s %j", req.method, req.url, req.headers);
     if (!req.url) {
       return this._responseError(res, 500, "invalid request");
@@ -197,7 +197,7 @@ export default class HTTPProxy extends EventEmitter {
    * @param socket
    * @param bodyHead
    */
-  private _onConnect(req: ServerRequest, socket: Socket, bodyHead: Buffer): void {
+  private _onConnect(req: IncomingMessage, socket: Socket, bodyHead: Buffer): void {
     this._debug("on connect: %s %s", req.method, req.url);
     const url = `https://${req.url || ""}`;
     const { host, port } = getHostPortFromUrl(url);
@@ -317,7 +317,7 @@ export default class HTTPProxy extends EventEmitter {
    * @param res
    * @param options
    */
-  private _httpProxyPass(req: ServerRequest, res: ServerResponse, options?: ProxyResult): void {
+  private _httpProxyPass(req: IncomingMessage, res: ServerResponse, options?: ProxyResult): void {
     const url = (options ? options.url : req.url) || "";
     const headers: HttpHeaders = options ? options.headers : {};
     const num = ++this._httpProxyCounter;
@@ -400,7 +400,7 @@ export default class HTTPProxy extends EventEmitter {
     headers: HttpHeaders = {},
   ): ProxyHandler {
     const { hostname } = parseUrl(url);
-    const handler = (req: ServerRequest, result?: string[]): ProxyResult => {
+    const handler = (req: IncomingMessage, result?: string[]): ProxyResult => {
       const ret: { url: string; headers: HttpHeaders } = {
         url,
         headers: {},
