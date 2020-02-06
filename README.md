@@ -46,7 +46,8 @@ port: 4567
 # 是否显示调试信息
 debug: false
 
-# 代理规则
+# 代理改写规则，如果不需改写可以忽略此部分
+# match 部分只支持 http 协议
 rules:
 - match: http://morning.work/(.*)
   proxy: http://ucdok.com/{1}
@@ -104,7 +105,7 @@ proxy.server.listen(4567, () => console.log('listening...'));
 ```text
 MIT License
 
-Copyright (c) 2017-2019 Zongmin Lei <leizongmin@gmail.com>
+Copyright (c) 2017-2020 Zongmin Lei <leizongmin@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
