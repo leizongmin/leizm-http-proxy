@@ -99,7 +99,7 @@ function getHostPortFromUrl(url: string): { host: string; port: number } {
  *
  * @param protocol 协议名
  */
-function isHttpsProtocol(protocol: string = "http:"): boolean {
+function isHttpsProtocol(protocol: string | null = "http:"): boolean {
   protocol = protocol || "http:";
   return protocol.toLowerCase() === "https:";
 }

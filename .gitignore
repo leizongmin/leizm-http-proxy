@@ -59,3 +59,5 @@ typings/
 
 dist
 example
+
+package-lock.json
